@@ -18,7 +18,8 @@ GCC64_DIR=$(pwd)/GCC64
 GCC32_DIR=$(pwd)/GCC32
 
 msg "|| Cloning Toolchain ||"
-git clone --depth=1 https://gitlab.com/dakkshesh07/neutron-clang -b Neutron-15 $CLANG_ROOTDIR
+git clone --depth=1 https://github.com/cyberknight777/gcc-arm64 -b master $GCC64_DIR
+git clone --depth=1 https://github.com/cyberknight777/gcc-arm -b master $GCC32_DIR
 
 # Main Declaration
 MODEL=Redmi 10
@@ -28,8 +29,8 @@ AK3_BRANCH=selene
 KERNEL_NAME=$(cat "arch/arm64/configs/$DEVICE_DEFCONFIG" | grep "CONFIG_LOCALVERSION=" | sed 's/CONFIG_LOCALVERSION="-*//g' | sed 's/"*//g' )
 export KBUILD_BUILD_USER=Himemori
 export KBUILD_BUILD_HOST=XZI-TEAM
-CLANG_VER="$("$CLANG_ROOTDIR"/bin/clang --version | head -n 1)"
-LLD_VER="$("$CLANG_ROOTDIR"/bin/ld.lld --version | head -n 1)"
+GCC_VER="$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)"
+LLD_VER="$("$GCC64_DIR"/bin/aarch64-elf-ld.lld --version | head -n 1)"
 IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
 DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 DATE2=$(date +"%m%d")
@@ -37,8 +38,8 @@ START=$(date +"%s")
 DTB=$(pwd)/out/arch/arm64/boot/dts/mediatek/mt6768.dtb
 DTBO=$(pwd)/out/arch/arm64/boot/dtbo.img
 DISTRO=$(source /etc/os-release && echo "${NAME}")
-export KBUILD_COMPILER_STRING="$CLANG_VER with $LLD_VER"
-PATH="${PATH}:${CLANG_ROOTDIR}/bin"
+export KBUILD_COMPILER_STRING="$GCC_VER with $LLD_VER"
+PATH="$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH"
 
 #Check Kernel Version
 KERVER=$(make kernelversion)
@@ -86,13 +87,11 @@ tg_post_msg() {
 tg_post_msg "<b>New Kernel Under Compilation</b>%0ADate : <code>$(TZ=Asia/Jakarta date)</code>%0A<code> --- Detail Info About it --- </code>%0A<b>- Docker OS: </b><code>$DISTRO</code>%0A- Kernel Name : <code>${KERNEL_NAME}</code>%0A- Kernel Version : <code>${KERVER}</code>%0A- Builder Name : <code>${KBUILD_BUILD_USER}</code>%0A- Builder Host : <code>${KBUILD_BUILD_HOST}</code>%0A- Pipeline Host : <code>$DRONE_SYSTEM_HOSTNAME</code>%0A- Host Core Count : <code>$PROCS</code>%0A- Compiler Used : <code>${KBUILD_COMPILER_STRING}</code>%0A- Branch : <code>$CI_BRANCH</code>%0A- Top Commit : <code>$COMMIT_HEAD</code>%0A<a href='$SERVER_URL'>Link</a>"
 
    MAKE+=(
-    CC=clang
-    AR=llvm-ar
-    NM=llvm-nm
-    OBJDUMP=llvm-objdump
-    STRIP=llvm-strip
-    CROSS_COMPILE=aarch64-linux-gnu-
-    CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+    CROSS_COMPILE_ARM32=arm-eabi-
+    CROSS_COMPILE=aarch64-elf-
+    AR=aarch64-elf-ar
+    OBJDUMP=aarch64-elf-objdump
+    STRIP=aarch64-elf-strip
     CONFIG_DEBUG_SECTION_MISMATCH=y
 )
 
